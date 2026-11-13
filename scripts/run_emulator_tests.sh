@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 # Runs on the booted emulator (called by reactivecircus/android-emulator-runner).
-# Uses `am instrument` directly (not Gradle connectedAndroidTest) so the app is not uninstalled
-# before we pull the report files.
 set -uo pipefail
 PKG=com.example.mycompose.shepherdai
 mkdir -p ci-report
@@ -12,8 +10,14 @@ adb install -r -t "$TEST_APK" || exit 1
 adb shell pm grant "$PKG" android.permission.CAMERA || true
 adb logcat -c || true
 adb shell am instrument -w "$PKG.test/androidx.test.runner.AndroidJUnitRunner" 2>&1 | tee ci-report/instrument.txt
-adb pull "/sdcard/Android/data/$PKG/files/report/." ci-report/ || echo "no report files to pull"
+# Android 11+ blocks adb from reading Android/data; google_apis images allow root.
+adb root || true
+sleep 3
+adb wait-for-device
+adb pull "/sdcard/Android/data/$PKG/files/report/." ci-report/ \
+  || adb pull "/data/media/0/Android/data/$PKG/files/report/." ci-report/ \
+  || echo "no report files to pull"
+ls -la ci-report || true
 adb exec-out screencap -p > ci-report/final_screen.png || true
 adb logcat -d > ci-report/logcat.txt 2>&1 || true
-# `am instrument` exits 0 even on failures, so decide from its output
 grep -q "^OK (" ci-report/instrument.txt
