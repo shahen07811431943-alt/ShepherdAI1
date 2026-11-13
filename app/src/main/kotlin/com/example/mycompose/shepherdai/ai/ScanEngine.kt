@@ -39,7 +39,7 @@ class ScanEngine(
     private var frame = 0
 
     fun reset() { tracker = SimpleTracker(); frame = 0 }
-    fun count() = tracker.uniqueCount()
+    fun count() = tracker.uniqueCount(true)
     fun identifiedBest() = tracker.identifiedBest()
 
     /** Per frame: one detection, plus at most one fingerprint, and only from sharp, large-enough crops. */
@@ -49,8 +49,9 @@ class ScanEngine(
         val dets = all.filter { classId < 0 || it.cls == classId }
         val visible = tracker.update(dets.map { it.box })
         if (reid != null) {
-            val t = visible.firstOrNull { it.animalId == null && it.hits >= tracker.minHits && frame - it.lastTry >= 6 }
-            if (t != null) {
+            // up to 2 fingerprints per frame, from tracks that are confirmed and not tried in the last 6 frames
+            val todo = visible.filter { it.animalId == null && it.hits >= tracker.minHits && frame - it.lastTry >= 6 }.take(2)
+            for (t in todo) {
                 t.lastTry = frame
                 val c = crop(bmp, t.box)
                 if (c != null && Quality.sharpness(c) >= Quality.MIN_SHARPNESS) {
