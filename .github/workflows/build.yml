@@ -7,8 +7,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Unzip project
-        run: unzip -q ShepherdAI.zip
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -17,15 +15,12 @@ jobs:
         with:
           gradle-version: 8.13
       - name: Fetch models
-        working-directory: ShepherdAI
         run: bash scripts/fetch_models.sh
       - name: Unit tests
-        working-directory: ShepherdAI
         run: gradle testDebugUnitTest --stacktrace
       - name: Build debug APK
-        working-directory: ShepherdAI
         run: gradle assembleDebug --stacktrace
       - uses: actions/upload-artifact@v4
         with:
           name: ShepherdAI-debug-apk
-          path: ShepherdAI/app/build/outputs/apk/debug/*.apk
+          path: app/build/outputs/apk/debug/*.apk
