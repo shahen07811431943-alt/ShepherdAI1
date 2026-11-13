@@ -1,0 +1,6 @@
+app/src/main/assets/models/*.tflite
+build/
+.gradle/
+local.properties
+app/src/androidTest/assets/images/*/
+ci-report/
